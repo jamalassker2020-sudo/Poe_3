@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HFT Ultra 2026</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0e14;--card:#121820;--border:#1a2030;--txt:#c8d0dc;--dim:#5a6270;--g:#0f6;--r:#f44;--b:#0af;--y:#fc0}
+html.light{--bg:#f4f6f8;--card:#fff;--border:#dde;--txt:#1a1a2e;--dim:#888}
+body{background:var(--bg);color:var(--txt);font:11px/1.4 monospace;padding:8px;min-height:100vh}
+.g{color:var(--g)}.r{color:var(--r)}.b{color:var(--b)}.y{color:var(--y)}.dim{color:var(--dim)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:8px;margin-bottom:8px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.col{flex:1;min-width:120px}
+.grid{display:grid;gap:4px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g6{grid-template-columns:repeat(6,1fr)}
+.stat{background:var(--bg);padding:6px;border-radius:3px;text-align:center}
+.stat small{display:block;font-size:9px;color:var(--dim);margin-bottom:2px}
+.stat b{font-size:13px}
+h1{font-size:14px;margin-bottom:4px}
+table{width:100%;border-collapse:collapse;font-size:10px}
+th,td{padding:4px;text-align:right}
+th{color:var(--dim);font-weight:400;border-bottom:1px solid var(--border)}
+td:first-child,th:first-child{text-align:left}
+tr:hover{background:rgba(255,255,255,.02)}
+.scroll{max-height:200px;overflow-y:auto}
+.bar{height:40px;display:flex;align-items:end;gap:1px}
+.bar div{flex:1;min-width:2px;border-radius:1px 1px 0 0}
+.log{font-size:9px;padding:2px 4px;margin:1px 0;border-radius:2px;background:var(--bg)}
+button{background:var(--card);border:1px solid var(--border);color:var(--txt);padding:4px 8px;border-radius:3px;cursor:pointer;font:inherit}
+button:hover{background:var(--border)}
+.pulse{animation:p 1.5s infinite}@keyframes p{50%{opacity:.5}}
+.badge{display:inline-block;padding:2px 6px;border-radius:3px;font-size:9px}
+.badge.on{background:#0f62;color:var(--g)}.badge.off{background:#f442;color:var(--r)}.badge.warn{background:#fc02;color:var(--y)}
+@media(max-width:600px){.g6{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
+<div>
+<h1>⚡ HFT ULTRA <span class="dim">2026</span></h1>
+<small class="dim">29 PAIRS • REAL BINANCE DATA • SMART RISK • AI SIGNALS</small>
+</div>
+<div class="row" style="gap:4px">
+<span id="status" class="badge pulse">INIT</span>
+<span id="api" class="badge dim">API:--</span>
+<span id="shield" class="badge">SHIELD:--</span>
+<button onclick="reset()">⟲</button>
+</div>
+</div>
+
+<div class="grid g6" style="margin-bottom:8px">
+<div class="stat"><small>💰 EQUITY</small><b id="equity" class="g">$100.00</b><div id="pnlPct" style="font-size:9px">+0.00%</div></div>
+<div class="stat"><small>P&L</small><b id="pnl">$0.00</b></div>
+<div class="stat"><small>TRADES</small><b id="trades" class="b">0</b></div>
+<div class="stat"><small>WIN%</small><b id="winrate" class="y">0%</b></div>
+<div class="stat"><small>PROFIT F.</small><b id="pf" class="g">0.00</b></div>
+<div class="stat"><small>OPEN</small><b id="openPos" class="b">0/6</b></div>
+<div class="stat"><small>STREAK</small><b id="streak">0</b></div>
+<div class="stat"><small>BEST</small><b id="best" class="g">$100</b></div>
+<div class="stat"><small>DD</small><b id="dd" class="r">0%</b></div>
+<div class="stat"><small>AVG WIN</small><b id="avgWin" class="g">$0</b></div>
+<div class="stat"><small>AVG LOSS</small><b id="avgLoss" class="r">$0</b></div>
+<div class="stat"><small>SHARPE</small><b id="sharpe" class="b">0.00</b></div>
+</div>
+
+<div class="row">
+<div class="col" style="flex:3">
+<div class="card">
+<div class="row" style="justify-content:space-between;margin-bottom:4px">
+<b class="b">📊 MARKET</b>
+<span id="time" class="dim">--:--:--</span>
+</div>
+<div class="scroll"><table><thead><tr><th>SYM</th><th>BID</th><th>ASK</th><th>Δ</th><th>RSI</th><th>MOM</th><th>SIG</th><th>P&L</th></tr></thead><tbody id="market"></tbody></table></div>
+</div>
+</div>
+<div class="col">
+<div class="card">
+<b>📈 POSITIONS</b>
+<div id="positions" class="scroll" style="margin-top:4px"><span class="dim">Scanning...</span></div>
+</div>
+<div class="card">
+<b>⚡ LOG</b>
+<div id="log" class="scroll" style="margin-top:4px"><span class="dim">Starting...</span></div>
+</div>
+</div>
+</div>
+
+<div class="row">
+<div class="col">
+<div class="card"><b>💹 EQUITY</b><div class="bar" id="chart"></div></div>
+</div>
+<div class="col">
+<div class="card">
+<b>🛡️ RISK SHIELD</b>
+<div class="grid g3" style="margin-top:6px;font-size:9px;text-align:center">
+<div class="stat"><small>MAX DD</small><span id="maxDD">5%</span></div>
+<div class="stat"><small>DAILY LOSS</small><span id="dailyLoss">$0</span></div>
+<div class="stat"><small>HEAT</small><span id="heat">0%</span></div>
+<div class="stat"><small>LOT</small><span id="lotSize" class="b">0.01</span></div>
+<div class="stat"><small>RR</small><span class="g">3:1</span></div>
+<div class="stat"><small>CORR HEDGE</small><span id="hedge" class="y">ON</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+// Dark/Light mode
+if(matchMedia('(prefers-color-scheme:light)').matches)document.documentElement.classList.add('light');
+matchMedia('(prefers-color-scheme:light)').onchange=e=>document.documentElement.classList.toggle('light',e.matches);
+
+// Binance Crypto Instruments (29 pairs)
+const SYM=[
+{s:'BTC/USDT',b:'BTCUSDT',p:.01,t:'major'},
+{s:'ETH/USDT',b:'ETHUSDT',p:.01,t:'major'},
+{s:'BNB/USDT',b:'BNBUSDT',p:.01,t:'major'},
+{s:'XRP/USDT',b:'XRPUSDT',p:.0001,t:'alt'},
+{s:'SOL/USDT',b:'SOLUSDT',p:.01,t:'major'},
+{s:'DOGE/USDT',b:'DOGEUSDT',p:.00001,t:'alt'},
+{s:'ADA/USDT',b:'ADAUSDT',p:.0001,t:'alt'},
+{s:'AVAX/USDT',b:'AVAXUSDT',p:.01,t:'alt'},
+{s:'LINK/USDT',b:'LINKUSDT',p:.001,t:'alt'},
+{s:'DOT/USDT',b:'DOTUSDT',p:.001,t:'alt'},
+{s:'MATIC/USDT',b:'MATICUSDT',p:.0001,t:'alt'},
+{s:'SHIB/USDT',b:'SHIBUSDT',p:.00000001,t:'meme'},
+{s:'LTC/USDT',b:'LTCUSDT',p:.01,t:'major'},
+{s:'TRX/USDT',b:'TRXUSDT',p:.0001,t:'alt'},
+{s:'ATOM/USDT',b:'ATOMUSDT',p:.001,t:'alt'},
+{s:'UNI/USDT',b:'UNIUSDT',p:.001,t:'defi'},
+{s:'ETC/USDT',b:'ETCUSDT',p:.01,t:'alt'},
+{s:'XLM/USDT',b:'XLMUSDT',p:.0001,t:'alt'},
+{s:'NEAR/USDT',b:'NEARUSDT',p:.001,t:'alt'},
+{s:'APT/USDT',b:'APTUSDT',p:.01,t:'alt'},
+{s:'FIL/USDT',b:'FILUSDT',p:.001,t:'alt'},
+{s:'ARB/USDT',b:'ARBUSDT',p:.0001,t:'l2'},
+{s:'OP/USDT',b:'OPUSDT',p:.0001,t:'l2'},
+{s:'INJ/USDT',b:'INJUSDT',p:.01,t:'defi'},
+{s:'SUI/USDT',b:'SUIUSDT',p:.0001,t:'alt'},
+{s:'PEPE/USDT',b:'PEPEUSDT',p:.000000001,t:'meme'},
+{s:'WIF/USDT',b:'WIFUSDT',p:.0001,t:'meme'},
+{s:'RENDER/USDT',b:'RENDERUSDT',p:.001,t:'ai'},
+{s:'FET/USDT',b:'FETUSDT',p:.0001,t:'ai'}
+];
+
+// Enhanced Config - Conservative HFT
+const C={
+  start:100,
+  baseLot:.01,
+  tp:15,           // 15 pip TP (3:1 RR)
+  sl:5,            // 5 pip SL tight
+  trail:6,         // Trail after 6 pips
+  maxPos:6,        // Max 6 positions
+  maxDD:5,         // 5% max drawdown circuit breaker
+  dailyLossLimit:3,// 3% daily loss limit
+  cooldown:3000,   // 3s cooldown
+  rsiPeriod:14,
+  minRSI:25,       // Oversold
+  maxRSI:75,       // Overbought
+  minStrength:3,   // Need 3+ strategy confirmations
+  spreadMax:2,     // Max 2 pip spread to enter
+  corrThreshold:.7 // Correlation threshold for hedging
+};
+
+// State
+let S=load()||fresh();
+let prices={},history={},lastTrade={},logs=[],ticks=0,dailyPnL=0,dayStart=new Date().toDateString();
+let binanceData={};
+
+function fresh(){return{bal:C.start,pos:[],wins:0,losses:0,grossWin:0,grossLoss:0,eq:[C.start],streak:0,best:C.start,peak:C.start,returns:[]}}
+function load(){try{return JSON.parse(atob(location.hash.slice(1)))}catch(e){return null}}
+function save(){try{history.replaceState(null,'','#'+btoa(JSON.stringify({...S,eq:S.eq.slice(-60),returns:S.returns.slice(-100)})))}catch(e){}}
+function reset(){S=fresh();logs=[];prices={};history={};dailyPnL=0;binanceData={};save();render()}
+
+// Fetch real prices from Binance public API (no API key needed)
+async function fetchBinancePrices(){
+  try{
+    // Fetch book tickers (bid/ask) for all symbols
+    const symbols=SYM.map(s=>s.b);
+    const r=await fetch('https://api.binance.com/api/v3/ticker/bookTicker');
+    const data=await r.json();
+
+    // Create lookup
+    data.forEach(t=>{
+      binanceData[t.symbol]={
+        bid:parseFloat(t.bidPrice),
+        ask:parseFloat(t.askPrice),
+        bidQty:parseFloat(t.bidQty),
+        askQty:parseFloat(t.askQty)
+      };
+    });
+
+    // Also fetch 24hr changes for momentum
+    const r2=await fetch('https://api.binance.com/api/v3/ticker/24hr');
+    const data24=await r2.json();
+    data24.forEach(t=>{
+      if(binanceData[t.symbol]){
+        binanceData[t.symbol].change24=parseFloat(t.priceChangePercent);
+        binanceData[t.symbol].high24=parseFloat(t.highPrice);
+        binanceData[t.symbol].low24=parseFloat(t.lowPrice);
+        binanceData[t.symbol].volume=parseFloat(t.quoteVolume);
+      }
+    });
+
+    document.getElementById('api').textContent='API:✓';
+    document.getElementById('api').className='badge on';
+    return true;
+  }catch(e){
+    console.log('Binance API error:',JSON.stringify(e));
+    document.getElementById('api').textContent='API:ERR';
+    document.getElementById('api').className='badge off';
+    return false;
+  }
+}
+
+// Price history for indicators
+function updateHistory(sym,price){
+  if(!history[sym])history[sym]=[];
+  history[sym].push(price);
+  if(history[sym].length>50)history[sym].shift();
+}
+
+// RSI Calculation
+function calcRSI(sym){
+  const h=history[sym];
+  if(!h||h.length<C.rsiPeriod+1)return 50;
+  let gains=0,losses=0;
+  for(let i=h.length-C.rsiPeriod;i<h.length;i++){
+    const diff=h[i]-h[i-1];
+    if(diff>0)gains+=diff;else losses-=diff;
+  }
+  if(losses===0)return 100;
+  const rs=gains/losses;
+  return 100-(100/(1+rs));
+}
+
+// Momentum (Rate of Change)
+function calcMomentum(sym){
+  const h=history[sym];
+  if(!h||h.length<10)return 0;
+  return((h[h.length-1]-h[h.length-10])/h[h.length-10])*100;
+}
+
+// Volatility (ATR-like)
+function calcVolatility(sym){
+  const h=history[sym];
+  if(!h||h.length<10)return 1;
+  let sum=0;
+  for(let i=1;i<Math.min(h.length,10);i++)sum+=Math.abs(h[i]-h[i-1]);
+  return sum/9;
+}
+
+// Correlation check for crypto
+function getCorrelatedPairs(sym){
+  const corr={
+    'BTC/USDT':['ETH/USDT','SOL/USDT'],
+    'ETH/USDT':['BTC/USDT','SOL/USDT'],
+    'SOL/USDT':['ETH/USDT','AVAX/USDT'],
+    'DOGE/USDT':['SHIB/USDT','PEPE/USDT'],
+    'SHIB/USDT':['DOGE/USDT','PEPE/USDT'],
+    'ARB/USDT':['OP/USDT'],
+    'OP/USDT':['ARB/USDT'],
+    'RENDER/USDT':['FET/USDT'],
+    'FET/USDT':['RENDER/USDT']
+  };
+  return corr[sym]||[];
+}
+
+// Update prices from real Binance data
+function updatePrices(){
+  SYM.forEach(sym=>{
+    const bd=binanceData[sym.b];
+    if(!bd)return;
+
+    const prevMid=prices[sym.s]?.mid||((bd.bid+bd.ask)/2);
+    const mid=(bd.bid+bd.ask)/2;
+
+    updateHistory(sym.s,mid);
+
+    const spreadPips=(bd.ask-bd.bid)/sym.p;
+    const change=(mid-prevMid)/sym.p;
+
+    prices[sym.s]={
+      bid:bd.bid,
+      ask:bd.ask,
+      mid:mid,
+      change:change,
+      spread:spreadPips,
+      pip:sym.p,
+      type:sym.t,
+      change24:bd.change24||0,
+      volume:bd.volume||0
+    };
+  });
+  ticks++;
+}
+
+// Enhanced AI Signal Generation
+function getSignal(sym){
+  const p=prices[sym];
+  if(!p)return{score:0,strength:0,sig:null,rsi:50,mom:0};
+
+  const rsi=calcRSI(sym);
+  const mom=calcMomentum(sym);
+  const vol=calcVolatility(sym);
+
+  let score=0,strength=0;
+
+  // 1. RSI Strategy (Oversold/Overbought)
+  if(rsi<C.minRSI){score+=20;strength++;}
+  else if(rsi>C.maxRSI){score-=20;strength++;}
+  else if(rsi<40){score+=10;}
+  else if(rsi>60){score-=10;}
+
+  // 2. Momentum Confirmation
+  if(mom>0.05&&rsi<50){score+=15;strength++;}
+  else if(mom<-0.05&&rsi>50){score-=15;strength++;}
+
+  // 3. Trend Following (price above/below MA)
+  const h=history[sym];
+  if(h&&h.length>=20){
+    const ma20=h.slice(-20).reduce((a,b)=>a+b,0)/20;
+    if(p.mid>ma20&&mom>0){score+=12;strength++;}
+    else if(p.mid<ma20&&mom<0){score-=12;strength++;}
+  }
+
+  // 4. Volatility Filter - prefer low vol entries
+  if(vol<p.mid*0.001){strength++;}
+
+  // 5. 24hr Change momentum
+  if(p.change24){
+    if(p.change24>2&&rsi<60){score+=10;strength++;}
+    else if(p.change24<-2&&rsi>40){score-=10;strength++;}
+  }
+
+  // 6. BTC correlation for altcoins
+  if(sym!=='BTC/USDT'){
+    const btc=prices['BTC/USDT'];
+    if(btc){
+      if(btc.change>0&&p.change>0){strength++;}
+      else if(btc.change<0&&p.change<0){strength++;}
+    }
+  }
+
+  // 7. Cross-pair confirmation
+  const corr=getCorrelatedPairs(sym);
+  corr.forEach(c=>{
+    const cp=prices[c];
+    if(cp){
+      if((score>0&&cp.change>0)||(score<0&&cp.change<0))strength++;
+    }
+  });
+
+  // Spread filter - no trade if spread too wide
+  if(p.spread>C.spreadMax)return{score,strength:0,sig:null,rsi,mom};
+
+  let sig=null;
+  if(score>=25&&strength>=C.minStrength)sig='BUY';
+  else if(score<=-25&&strength>=C.minStrength)sig='SELL';
+
+  return{score,strength,sig,rsi:Math.round(rsi),mom:mom.toFixed(2)};
+}
+
+// Risk Shield - Circuit Breakers
+function checkRiskShield(){
+  const equity=S.bal+getUnrealized();
+  const dd=(S.peak-equity)/S.peak*100;
+  const heat=(S.pos.length/C.maxPos)*100;
+
+  // Reset daily P&L on new day
+  if(new Date().toDateString()!==dayStart){
+    dayStart=new Date().toDateString();
+    dailyPnL=0;
+  }
+
+  // Update displays
+  document.getElementById('dd').textContent=dd.toFixed(1)+'%';
+  document.getElementById('heat').textContent=Math.round(heat)+'%';
+  document.getElementById('dailyLoss').textContent='$'+dailyPnL.toFixed(2);
+  document.getElementById('heat').className=heat>70?'r':heat>50?'y':'g';
+
+  // Circuit breakers
+  if(dd>=C.maxDD){
+    document.getElementById('shield').textContent='SHIELD:🛑';
+    document.getElementById('shield').className='badge off';
+    return false; // Stop trading
+  }
+  if(Math.abs(dailyPnL)>=C.start*(C.dailyLossLimit/100)&&dailyPnL<0){
+    document.getElementById('shield').textContent='SHIELD:⚠️';
+    document.getElementById('shield').className='badge warn';
+    return false;
+  }
+
+  document.getElementById('shield').textContent='SHIELD:✓';
+  document.getElementById('shield').className='badge on';
+  return true;
+}
+
+// Dynamic position sizing based on volatility
+function calcLotSize(sym){
+  const vol=calcVolatility(sym);
+  const p=prices[sym];
+  const equity=S.bal+getUnrealized();
+  const riskPct=1; // Risk 1% per trade
+
+  // Reduce lot size in high volatility
+  const volFactor=p?Math.max(0.5,1-vol/p.mid*100):1;
+
+  // Reduce after losses
+  const streakFactor=S.streak<-2?0.5:1;
+
+  const lot=Math.max(0.01,Math.min(0.05,C.baseLot*volFactor*streakFactor));
+  document.getElementById('lotSize').textContent=lot.toFixed(2);
+  return lot;
+}
+
+// Get unrealized P&L
+function getUnrealized(){
+  let u=0;
+  S.pos.forEach(pos=>{
+    const p=prices[pos.sym];
+    if(!p)return;
+    const cur=pos.type==='BUY'?p.bid:p.ask;
+    const pips=pos.type==='BUY'?(cur-pos.entry)/pos.pip:(pos.entry-cur)/pos.pip;
+    u+=pips*pos.pipValue;
+  });
+  return u;
+}
+
+// Check correlation before opening
+function hasCorrelatedPosition(sym){
+  const corr=getCorrelatedPairs(sym);
+  return S.pos.some(p=>corr.includes(p.sym)||p.sym===sym);
+}
+
+// Trading Engine
+function trade(){
+  if(!checkRiskShield())return;
+
+  const now=Date.now();
+
+  SYM.forEach(sym=>{
+    const p=prices[sym.s];
+    if(!p)return;
+
+    // Cooldown
+    if(lastTrade[sym.s]&&now-lastTrade[sym.s]<C.cooldown)return;
+
+    // Already in this or correlated position
+    if(hasCorrelatedPosition(sym.s))return;
+
+    // Max positions
+    if(S.pos.length>=C.maxPos)return;
+
+    const{sig,strength}=getSignal(sym.s);
+
+    if(sig){
+      const lot=calcLotSize(sym.s);
+      const pipValue=lot*10000*sym.p;
+
+      const isBuy=sig==='BUY';
+      const entry=isBuy?p.ask:p.bid;
+
+      S.pos.push({
+        sym:sym.s,
+        type:sig,
+        entry,
+        tp:isBuy?entry+C.tp*sym.p:entry-C.tp*sym.p,
+        sl:isBuy?entry-C.sl*sym.p:entry+C.sl*sym.p,
+        trail:null,
+        pipValue,
+        pip:sym.p,
+        lot,
+        strength,
+        time:now
+      });
+
+      lastTrade[sym.s]=now;
+      log(`📈 ${sig} ${sym.s} @${fmtP(sym.s,entry)} [${strength}★]`,isBuy?'g':'r');
+      save();
+    }
+  });
+
+  managePositions();
+}
+
+function managePositions(){
+  const toClose=[];
+
+  S.pos.forEach((pos,i)=>{
+    const p=prices[pos.sym];
+    if(!p)return;
+
+    const isBuy=pos.type==='BUY';
+    const cur=isBuy?p.bid:p.ask;
+    const pips=isBuy?(cur-pos.entry)/pos.pip:(pos.entry-cur)/pos.pip;
+
+    // Trailing stop activation
+    if(pips>=C.trail&&!pos.trail){
+      pos.trail=cur;
+      log(`🔒 TRAIL ${pos.sym} +${pips.toFixed(1)}p`,'y');
+    }
+
+    // Update trailing stop
+    if(pos.trail){
+      if(isBuy&&cur>pos.trail){
+        pos.trail=cur;
+        pos.sl=cur-C.trail*pos.pip*.4; // Tighter trail
+      }else if(!isBuy&&cur<pos.trail){
+        pos.trail=cur;
+        pos.sl=cur+C.trail*pos.pip*.4;
+      }
+    }
+
+    // Exit conditions
+    let reason=null;
+    if(isBuy){
+      if(cur>=pos.tp)reason='TP';
+      else if(cur<=pos.sl)reason=pos.trail?'TRAIL':'SL';
+    }else{
+      if(cur<=pos.tp)reason='TP';
+      else if(cur>=pos.sl)reason=pos.trail?'TRAIL':'SL';
+    }
+
+    if(reason){
+      const pnl=pips*pos.pipValue;
+      S.bal+=pnl;
+      dailyPnL+=pnl;
+
+      // Track returns for Sharpe
+      S.returns.push(pnl/C.start*100);
+      if(S.returns.length>100)S.returns.shift();
+
+      if(pnl>0){
+        S.wins++;S.grossWin+=pnl;
+        S.streak=S.streak>0?S.streak+1:1;
+      }else{
+        S.losses++;S.grossLoss+=Math.abs(pnl);
+        S.streak=S.streak<0?S.streak-1:-1;
+      }
+
+      if(S.bal>S.best)S.best=S.bal;
+      if(S.bal>S.peak)S.peak=S.bal;
+
+      const em=reason==='TP'?'✅':reason==='TRAIL'?'🔒':'❌';
+      log(`${em} ${reason} ${pos.sym} ${pnl>=0?'+':''}$${pnl.toFixed(2)}`,(pnl>=0?'g':'r'));
+      toClose.push(i);
+    }
+  });
+
+  if(toClose.length){
+    S.pos=S.pos.filter((_,i)=>!toClose.includes(i));
+    save();
+  }
+}
+
+// Calculate Sharpe Ratio
+function calcSharpe(){
+  if(S.returns.length<10)return 0;
+  const mean=S.returns.reduce((a,b)=>a+b,0)/S.returns.length;
+  const variance=S.returns.reduce((a,b)=>a+Math.pow(b-mean,2),0)/S.returns.length;
+  const std=Math.sqrt(variance);
+  return std===0?0:(mean/std*Math.sqrt(252)).toFixed(2);
+}
+
+function log(msg,cls){
+  logs.unshift({msg,cls,t:Date.now()});
+  if(logs.length>20)logs.pop();
+}
+
+function fmtP(sym,price){
+  const s=SYM.find(x=>x.s===sym);
+  if(!s)return price.toFixed(4);
+  if(s.p>=0.01)return price.toFixed(2);
+  if(s.p>=0.001)return price.toFixed(3);
+  if(s.p>=0.0001)return price.toFixed(4);
+  if(s.p>=0.00001)return price.toFixed(5);
+  if(s.p>=0.000001)return price.toFixed(6);
+  if(s.p>=0.0000001)return price.toFixed(8);
+  return price.toFixed(10);
+}
+
+function render(){
+  const unr=getUnrealized();
+  const equity=S.bal+unr;
+  const pnl=equity-C.start;
+  const pct=(pnl/C.start)*100;
+  const total=S.wins+S.losses;
+  const wr=total>0?Math.round(S.wins/total*100):0;
+  const pf=S.grossLoss>0?(S.grossWin/S.grossLoss).toFixed(2):'∞';
+
+  document.getElementById('equity').textContent='$'+equity.toFixed(2);
+  document.getElementById('equity').className=pnl>=0?'g':'r';
+  document.getElementById('pnl').textContent=(pnl>=0?'+':'')+pnl.toFixed(2);
+  document.getElementById('pnl').className=pnl>=0?'g':'r';
+  document.getElementById('pnlPct').textContent=(pnl>=0?'+':'')+pct.toFixed(2)+'%';
+  document.getElementById('pnlPct').className=pnl>=0?'g':'r';
+  document.getElementById('trades').textContent=total;
+  document.getElementById('winrate').textContent=wr+'%';
+  document.getElementById('winrate').className=wr>=50?'g':wr>=40?'y':'r';
+  document.getElementById('pf').textContent=pf;
+  document.getElementById('openPos').textContent=S.pos.length+'/'+C.maxPos;
+  document.getElementById('streak').textContent=(S.streak>0?'+':'')+S.streak;
+  document.getElementById('streak').className=S.streak>0?'g':S.streak<0?'r':'';
+  document.getElementById('best').textContent='$'+S.best.toFixed(2);
+  document.getElementById('avgWin').textContent='$'+(S.wins>0?(S.grossWin/S.wins).toFixed(2):'0');
+  document.getElementById('avgLoss').textContent='$'+(S.losses>0?(S.grossLoss/S.losses).toFixed(2):'0');
+  document.getElementById('sharpe').textContent=calcSharpe();
+  document.getElementById('time').textContent=new Date().toLocaleTimeString();
+  document.getElementById('status').textContent='🟢 LIVE';
+  document.getElementById('status').className='badge on';
+
+  // Market table
+  document.getElementById('market').innerHTML=SYM.map(sym=>{
+    const p=prices[sym.s];
+    if(!p)return'';
+    const{strength,sig,rsi,mom}=getSignal(sym.s);
+    const pos=S.pos.find(x=>x.sym===sym.s);
+
+    let posH='-';
+    if(pos){
+      const cur=pos.type==='BUY'?p.bid:p.ask;
+      const pips=pos.type==='BUY'?(cur-pos.entry)/pos.pip:(pos.entry-cur)/pos.pip;
+      const pnl=pips*pos.pipValue;
+      posH=`<span class="${pnl>=0?'g':'r'}">${pnl>=0?'+':''}$${pnl.toFixed(2)}</span>`;
+    }
+
+    let sigH='-';
+    if(sig==='BUY')sigH='<span class="g">▲BUY</span>';
+    else if(sig==='SELL')sigH='<span class="r">▼SELL</span>';
+
+    const rsiC=rsi<30?'g':rsi>70?'r':'dim';
+    const momC=mom>0?'g':mom<0?'r':'dim';
+
+    return`<tr>
+      <td><b>${sym.s}</b></td>
+      <td>${fmtP(sym.s,p.bid)}</td>
+      <td>${fmtP(sym.s,p.ask)}</td>
+      <td class="${p.change>=0?'g':'r'}">${p.change>=0?'+':''}${p.change.toFixed(1)}</td>
+      <td class="${rsiC}">${rsi}</td>
+      <td class="${momC}">${mom}</td>
+      <td>${sigH}</td>
+      <td>${posH}</td>
+    </tr>`;
+  }).join('');
+
+  // Positions
+  if(S.pos.length===0){
+    document.getElementById('positions').innerHTML='<span class="dim">Scanning...</span>';
+  }else{
+    document.getElementById('positions').innerHTML=S.pos.map(pos=>{
+      const p=prices[pos.sym];
+      if(!p)return'';
+      const cur=pos.type==='BUY'?p.bid:p.ask;
+      const pips=pos.type==='BUY'?(cur-pos.entry)/pos.pip:(pos.entry-cur)/pos.pip;
+      const pnl=pips*pos.pipValue;
+      return`<div class="log" style="border-left:2px solid ${pnl>=0?'var(--g)':'var(--r)'}">
+        ${pos.sym} <span class="${pos.type==='BUY'?'g':'r'}">${pos.type}</span> ${pos.trail?'🔒':''}
+        <span class="${pnl>=0?'g':'r'}">${pips>=0?'+':''}${pips.toFixed(1)}p ($${pnl.toFixed(2)})</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Log
+  document.getElementById('log').innerHTML=logs.length
+    ?logs.slice(0,12).map(l=>`<div class="log ${l.cls}">${l.msg}</div>`).join('')
+    :'<span class="dim">Starting...</span>';
+
+  // Chart
+  S.eq.push(equity);if(S.eq.length>60)S.eq.shift();
+  const min=Math.min(...S.eq)*.98,max=Math.max(...S.eq)*1.02,range=max-min||1;
+  document.getElementById('chart').innerHTML=S.eq.map((v,i)=>{
+    const h=Math.max(4,((v-min)/range)*100);
+    const c=v>=C.start?'var(--g)':'var(--r)';
+    const o=.3+(i/S.eq.length)*.7;
+    return`<div style="height:${h}%;background:${c};opacity:${o}"></div>`;
+  }).join('');
+}
+
+// Init
+async function init(){
+  log('🚀 HFT ULTRA 2026 Starting...','b');
+  log('📡 Fetching Binance prices...','b');
+
+  const ok=await fetchBinancePrices();
+  if(ok){
+    updatePrices();
+    render();
+    log('✅ Ready! 29 crypto pairs loaded','g');
+    log('🛡️ Risk Shield ACTIVE','y');
+  }else{
+    log('❌ Failed to connect to Binance','r');
+  }
+
+  // Main loop - fetch fresh prices every 2 seconds
+  setInterval(async()=>{
+    await fetchBinancePrices();
+    updatePrices();
+    trade();
+    render();
+  },2000);
+
+  setInterval(save,5000);
+}
+
+init();
+</script>
+</body>
+</html>
+
